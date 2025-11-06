@@ -1,0 +1,181 @@
+:root {
+  color-scheme: dark light;
+  font-family: 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.4;
+  --bg-color: #0f172a;
+  --card-color: #1e293b;
+  --text-color: #f8fafc;
+  --accent-color: #38bdf8;
+  --danger-color: #ef4444;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, rgba(56, 189, 248, 0.25), transparent 60%),
+    var(--bg-color);
+  color: var(--text-color);
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header,
+.app-footer {
+  padding: 1.5rem clamp(1rem, 6vw, 3rem);
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(6px);
+}
+
+.app-header h1 {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.8rem, 2.5vw, 2.4rem);
+}
+
+main {
+  flex: 1;
+  padding: 1.5rem clamp(1rem, 6vw, 3rem) 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.status-panel,
+.channel-controls {
+  background: rgba(30, 41, 59, 0.75);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.4);
+}
+
+.status-panel {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.feedback {
+  margin: 0;
+  min-height: 1.4rem;
+  color: rgba(148, 163, 184, 0.85);
+  font-size: 0.9rem;
+}
+
+.button {
+  appearance: none;
+  border: none;
+  padding: 0.65rem 1.1rem;
+  border-radius: 0.75rem;
+  background: var(--accent-color);
+  color: #0f172a;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(56, 189, 248, 0.3);
+}
+
+.button:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.button.danger {
+  background: var(--danger-color);
+  color: #fff;
+}
+
+.range-form {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  margin-bottom: 1.5rem;
+}
+
+.range-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.95rem;
+}
+
+.range-form input {
+  border-radius: 0.6rem;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(15, 23, 42, 0.6);
+  color: var(--text-color);
+  padding: 0.45rem 0.7rem;
+  width: 7rem;
+}
+
+.channels-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.channel-card {
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 1rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  border: 1px solid rgba(56, 189, 248, 0.08);
+  transition: border 0.2s ease, transform 0.2s ease;
+}
+
+.channel-card:hover {
+  border-color: rgba(56, 189, 248, 0.4);
+  transform: translateY(-2px);
+}
+
+.channel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.channel-header h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.channel-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.channel-card input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent-color);
+}
+
+.channel-card input[type='number'] {
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.6rem;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(15, 23, 42, 0.6);
+  color: var(--text-color);
+}
+
+.app-footer {
+  text-align: center;
+  color: rgba(226, 232, 240, 0.7);
+}
+
+@media (max-width: 720px) {
+  .status-panel {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .range-form input {
+    width: 100%;
+  }
+}
