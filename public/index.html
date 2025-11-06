@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Art-Net DMX Controller</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Art-Net DMX Controller</h1>
+      <p>Steuere DMX-Lampen im lokalen Netzwerk. Verbunden über Art-Net.</p>
+    </header>
+
+    <main>
+      <section class="status-panel">
+        <div>
+          <strong>Ziel-IP:</strong>
+          <span id="status-target-ip">–</span>
+        </div>
+        <div>
+          <strong>Universum:</strong>
+          <span id="status-universe">–</span>
+        </div>
+        <div>
+          <strong>Kanäle:</strong>
+          <span id="status-channels">–</span>
+        </div>
+        <button id="blackout-btn" class="button danger">Blackout</button>
+        <p id="feedback" class="feedback" role="status"></p>
+      </section>
+
+      <section class="channel-controls">
+        <form id="channel-range-form" class="range-form">
+          <label>
+            Startkanal
+            <input type="number" id="start-channel" name="startChannel" min="1" max="512" value="1" />
+          </label>
+          <label>
+            Anzahl Kanäle
+            <input type="number" id="channel-count" name="channelCount" min="1" max="32" value="16" />
+          </label>
+          <button type="submit" class="button">Anzeigen</button>
+        </form>
+
+        <div id="channels-container" class="channels-grid"></div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <small>
+        Version 0.1.0 · Weitere Funktionen wie Cues, Szenen und Effekte folgen.
+      </small>
+    </footer>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>
