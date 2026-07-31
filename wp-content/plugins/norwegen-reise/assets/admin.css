@@ -1,0 +1,184 @@
+/* Editor styles for the travel day screens. */
+
+.nb-label {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 2px;
+}
+
+.nb-box {
+	padding: 4px 0 0;
+}
+
+.nb-track-status {
+	padding: 8px 12px;
+	border-left: 4px solid #c3c4c7;
+	background: #f6f7f7;
+	margin: 0 0 12px;
+}
+
+.nb-track-status--ok {
+	border-left-color: #00a884;
+}
+
+.nb-map {
+	height: 380px;
+	border-radius: 6px;
+	overflow: hidden;
+	border: 1px solid #dcdcde;
+	margin-top: 12px;
+	background: #0d1420;
+}
+
+.nb-map.is-picking {
+	outline: 3px solid #2271b1;
+	outline-offset: 2px;
+	cursor: crosshair;
+}
+
+.nb-map.is-picking .maplibregl-canvas {
+	cursor: crosshair;
+}
+
+.nb-admin-marker {
+	width: 26px;
+	height: 26px;
+	border-radius: 50% 50% 50% 2px;
+	transform: rotate(-45deg);
+	background: #2271b1;
+	color: #fff;
+	font-size: 12px;
+	font-weight: 700;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: 2px solid #fff;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+	cursor: pointer;
+}
+
+.nb-admin-marker::before {
+	content: "";
+	transform: rotate(45deg);
+	position: absolute;
+}
+
+.nb-pins__list {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin: 12px 0;
+}
+
+.nb-pin {
+	position: relative;
+	display: flex;
+	gap: 10px;
+	padding: 12px 34px 12px 12px;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	background: #fff;
+	transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.nb-pin.is-highlighted {
+	border-color: #2271b1;
+	box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.18);
+}
+
+.nb-pin__handle {
+	flex: 0 0 auto;
+	padding-top: 20px;
+}
+
+.nb-pin__number {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	background: #f0f0f1;
+	font-weight: 700;
+	font-size: 12px;
+	color: #50575e;
+}
+
+.nb-pin__fields {
+	flex: 1 1 auto;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	min-width: 0;
+}
+
+.nb-pin__row {
+	display: flex;
+	gap: 12px;
+	flex-wrap: wrap;
+	align-items: flex-end;
+}
+
+.nb-pin__field {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.nb-pin__field--grow {
+	flex: 1 1 260px;
+}
+
+.nb-pin__field--small {
+	flex: 0 0 160px;
+}
+
+.nb-pin__field--actions {
+	flex: 0 0 auto;
+}
+
+.nb-pin__field--media {
+	flex: 1 1 100%;
+}
+
+.nb-pin__field input[type="text"],
+.nb-pin__field textarea,
+.nb-pin__field select {
+	width: 100%;
+}
+
+.nb-pin__media {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.nb-pin__preview img {
+	width: 44px;
+	height: 44px;
+	object-fit: cover;
+	border-radius: 4px;
+	display: block;
+}
+
+.nb-pin__remove {
+	position: absolute;
+	top: 6px;
+	right: 8px;
+	font-size: 20px;
+	line-height: 1;
+	color: #b32d2e;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.nb-pin__remove:hover {
+	color: #8a2424;
+}
+
+@media screen and (max-width: 782px) {
+	.nb-pin__field--small {
+		flex: 1 1 140px;
+	}
+}
