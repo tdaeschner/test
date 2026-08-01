@@ -35,6 +35,41 @@ wie sie im Repository liegen. MapLibre GL (BSD-3) liegt fertig unter
 `wp-content/plugins/norwegen-reise/assets/vendor/maplibre-gl/`; es wird nichts
 von einem CDN nachgeladen.
 
+## Lokal ausprobieren
+
+Am schnellsten mit Docker — WordPress, Datenbank, Plugin, Theme und fünf
+Beispiel-Reisetage in zwei Befehlen:
+
+```bash
+docker compose up -d
+./tools/setup.sh
+```
+
+Danach läuft die Seite auf <http://localhost:8080>, das Backend unter
+`/wp-admin` mit `norwegen` / `norwegen`.
+
+Die Demo-Tage führen von Oslo über Geiranger und Trollstigen nach Bergen,
+mit Tracks und zwölf Fähnchen — genug, damit sich die Route beim Scrollen
+sichtbar füllt. Wieder entfernen:
+
+```bash
+docker compose run --rm wpcli eval-file tools/demo-data.php -- --delete
+```
+
+Die Demo-Daten lassen sich auch ohne WP-CLI erzeugen, etwa auf einer
+Testinstallation beim Hoster: `tools/demo-data.php` nach dem Laden von
+`wp-load.php` einbinden.
+
+Worauf beim Testen zu achten ist:
+
+* Beim Scrollen füllt sich die Linie, der Punkt an der Spitze wandert mit,
+  und die Anzeige unten zählt die Kilometer hoch.
+* Fähnchen tauchen erst auf, wenn die Route sie erreicht — und verschwinden
+  wieder, wenn man zurückscrollt.
+* Die Karte selbst anfassen: der Schalter springt auf „Freie Sicht“, die
+  Kamera hört auf zu führen, bis man ihn wieder aktiviert.
+* Ein Klick auf ein Fähnchen öffnet das Popup mit Link zum Tagesartikel.
+
 ## Der Abend-Workflow auf der Reise
 
 Pro Tag ein Beitrag unter **Norwegen → Neuer Tag**:

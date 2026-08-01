@@ -388,9 +388,14 @@ button {
 	background: var(--nb-bg-soft);
 }
 
-.nb-trip__map {
+/* Höhere Spezifität als `.maplibregl-map`: MapLibre bringt eigenes CSS mit,
+   das sonst `position` überschreibt und den Container auf Höhe 0 fallen lässt.
+   Breite und Höhe stehen zusätzlich explizit, damit die Karte auch dann passt. */
+.nb-trip .nb-trip__map {
 	position: absolute;
 	inset: 0;
+	width: 100%;
+	height: 100%;
 }
 
 .nb-trip__map.is-empty {
@@ -719,13 +724,23 @@ button {
 	flex-direction: column;
 	align-items: center;
 	transform-origin: bottom center;
-	transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.2, 1.4, 0.4, 1);
 }
 
+/* Ein- und Ausblenden läuft über die Kind-Elemente, nicht über das
+   Marker-Element selbst: MapLibre setzt dort `opacity` als Inline-Style und
+   würde jede Klassenregel überschreiben. */
 .nb-flag.is-hidden {
+	pointer-events: none;
+}
+
+.nb-flag.is-hidden .nb-flag__body {
 	opacity: 0;
 	transform: translateY(8px) scale(0.4);
-	pointer-events: none;
+}
+
+.nb-flag.is-hidden .nb-flag__pole {
+	opacity: 0;
+	transform: scaleY(0.2);
 }
 
 .nb-flag__body {
@@ -738,7 +753,8 @@ button {
 	border: 1px solid rgba(79, 224, 176, 0.6);
 	box-shadow: 0 6px 18px -6px rgba(0, 0, 0, 0.9), 0 0 18px -6px rgba(79, 224, 176, 0.7);
 	color: var(--nb-mint);
-	transition: transform 0.25s ease, box-shadow 0.25s ease;
+	transform-origin: bottom center;
+	transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.2, 1.4, 0.4, 1), box-shadow 0.25s ease;
 }
 
 .nb-flag__body svg {
@@ -751,6 +767,8 @@ button {
 	width: 1.5px;
 	height: 16px;
 	background: linear-gradient(180deg, rgba(79, 224, 176, 0.9), rgba(79, 224, 176, 0.05));
+	transform-origin: bottom center;
+	transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.2, 1.4, 0.4, 1);
 }
 
 .nb-flag:hover .nb-flag__body,
@@ -1087,9 +1105,9 @@ button {
 
 /* Day map + highlights */
 
+/* Steht über Karte und Highlight-Raster, die beide die volle Breite nutzen -
+   deshalb bündig zum Abschnitt und nicht auf Textbreite zentriert. */
 .nb-section-title {
-	max-width: var(--nb-measure);
-	margin-inline: auto;
 	font-size: var(--nb-step-2);
 	margin-bottom: 1.2rem;
 }
@@ -1674,10 +1692,13 @@ body.nb-lightbox-open {
 }
 
 @media (max-width: 1023px) {
+	/* Einspaltig liegt die Karte oben fest, die Tageskarten scrollen darunter
+	   hindurch - dafür muss die Karte über der Textspalte liegen. */
 	.nb-trip__stage {
 		top: var(--nb-header-height);
 		height: 56svh;
 		border-bottom: 1px solid var(--nb-line);
+		z-index: 4;
 	}
 
 	.nb-trip__scroller {

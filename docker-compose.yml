@@ -1,0 +1,69 @@
+# Lokale Testumgebung für den Norwegen-Travelblog.
+#
+#   docker compose up -d
+#   ./tools/setup.sh
+#
+# Danach: http://localhost:8080 (Backend: /wp-admin, norwegen / norwegen)
+
+services:
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: wordpress
+      MARIADB_ROOT_PASSWORD: wordpress
+    volumes:
+      - db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  wordpress:
+    image: wordpress:php8.2-apache
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+      # Uploads dürfen groß sein - Fotos und Videos von der Reise.
+      WORDPRESS_CONFIG_EXTRA: |
+        define( 'WP_DEBUG', true );
+        define( 'WP_DEBUG_DISPLAY', true );
+        @ini_set( 'upload_max_filesize', '256M' );
+        @ini_set( 'post_max_size', '256M' );
+    volumes:
+      - wp:/var/www/html
+      # Nur Plugin und Theme kommen aus dem Repository, der Rest ist Wegwerf-WordPress.
+      - ./wp-content/plugins/norwegen-reise:/var/www/html/wp-content/plugins/norwegen-reise
+      - ./wp-content/themes/nordlys:/var/www/html/wp-content/themes/nordlys
+      - ./tools:/var/www/html/tools
+
+  # Wird nur für Kommandos benutzt: docker compose run --rm wpcli <befehl>
+  wpcli:
+    image: wordpress:cli-php8.2
+    depends_on:
+      - wordpress
+    user: "33:33"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+    volumes:
+      - wp:/var/www/html
+      - ./wp-content/plugins/norwegen-reise:/var/www/html/wp-content/plugins/norwegen-reise
+      - ./wp-content/themes/nordlys:/var/www/html/wp-content/themes/nordlys
+      - ./tools:/var/www/html/tools
+    entrypoint: wp
+
+volumes:
+  db:
+  wp:
