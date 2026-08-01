@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:       Norwegen Reise
- * Plugin URI:        https://github.com/tdaeschner/test
+ * Plugin URI:        https://github.com/tdaeschner/norwegen-blog
  * Description:       Reisetagebuch-Datenmodell für den Norwegen-Travelblog: Reisetage mit GPX-Track, Highlight-Fähnchen, Karten-Daten und REST-Schnittstelle für die scrollbare Route.
  * Version:           1.0.0
  * Requires at least: 6.4
