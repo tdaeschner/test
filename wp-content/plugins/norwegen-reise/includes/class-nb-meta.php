@@ -15,6 +15,15 @@ class NB_Meta {
 	const NONCE = 'nb_day_meta';
 
 	/**
+	 * Upper bound per recording. A GPS log easily holds tens of thousands of
+	 * points; the map is happy with a fraction of that.
+	 */
+	const MAX_SEGMENT_POINTS = 1200;
+
+	/** Upper bound for the merged line of a whole day. */
+	const MAX_TRACK_POINTS = 2400;
+
+	/**
 	 * Hooks meta boxes and saving.
 	 */
 	public static function init() {
@@ -165,7 +174,16 @@ class NB_Meta {
 		wp_enqueue_style( 'nb-admin', NB_URL . 'assets/admin.css', array( 'maplibre-gl' ), NB_VERSION );
 		wp_enqueue_script( 'nb-admin', NB_URL . 'assets/admin.js', array( 'maplibre-gl', 'nb-map-style', 'jquery' ), NB_VERSION, true );
 
-		$post_id = get_the_ID();
+		$post_id  = get_the_ID();
+		$segments = array();
+
+		foreach ( self::get_segments( $post_id ) as $index => $segment ) {
+			$segments[] = array(
+				'name'   => $segment['name'],
+				'points' => $segment['points'],
+				'color'  => self::segment_color( $index ),
+			);
+		}
 
 		wp_localize_script(
 			'nb-admin',
@@ -173,6 +191,7 @@ class NB_Meta {
 			array(
 				'style'    => NB_Settings::style_config(),
 				'track'    => self::get_track( $post_id ),
+				'segments' => $segments,
 				'pins'     => self::get_pins( $post_id ),
 				'fallback' => NB_Settings::default_center(),
 				'i18n'     => array(
@@ -231,37 +250,85 @@ class NB_Meta {
 	 * @param WP_Post $post Current post.
 	 */
 	public static function render_track( $post ) {
-		$track  = self::get_track( $post->ID );
-		$source = get_post_meta( $post->ID, '_nb_track_source', true );
+		$segments = self::get_segments( $post->ID );
+		$track    = self::get_track( $post->ID );
 		?>
-		<div class="nb-box">
-			<?php if ( $track ) : ?>
+		<div class="nb-box nb-track">
+			<?php if ( $segments ) : ?>
 				<p class="nb-track-status nb-track-status--ok">
 					<?php
 					printf(
-						/* translators: 1: number of points, 2: distance, 3: file name */
-						esc_html__( 'Track vorhanden: %1$d Punkte, %2$s km %3$s', 'norwegen-reise' ),
+						/* translators: 1: number of recordings, 2: number of points, 3: distance */
+						esc_html( _n( '%1$d Aufzeichnung · %2$d Punkte · %3$s km', '%1$d Aufzeichnungen · %2$d Punkte · %3$s km', count( $segments ), 'norwegen-reise' ) ),
+						count( $segments ),
 						count( $track ),
-						esc_html( number_format_i18n( NB_Geo::track_length_km( $track ), 1 ) ),
-						$source ? esc_html( '(' . $source . ')' ) : ''
+						esc_html( number_format_i18n( self::segments_length_km( $segments ), 1 ) )
 					);
 					?>
+				</p>
+
+				<table class="nb-segments widefat striped">
+					<thead>
+						<tr>
+							<th scope="col" class="nb-segments__order"><?php esc_html_e( 'Nr.', 'norwegen-reise' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Aufzeichnung', 'norwegen-reise' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Aufgenommen', 'norwegen-reise' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Punkte', 'norwegen-reise' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Distanz', 'norwegen-reise' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Entfernen', 'norwegen-reise' ); ?></th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ( $segments as $index => $segment ) : ?>
+							<tr data-segment="<?php echo esc_attr( $index ); ?>">
+								<td>
+									<span class="nb-segments__swatch" style="background: <?php echo esc_attr( self::segment_color( $index ) ); ?>" aria-hidden="true"></span>
+									<input type="number" class="small-text" min="1" step="1"
+										name="nb_segments[<?php echo esc_attr( $index ); ?>][order]"
+										value="<?php echo esc_attr( $index + 1 ); ?>"
+										aria-label="<?php esc_attr_e( 'Reihenfolge', 'norwegen-reise' ); ?>" />
+								</td>
+								<td><?php echo esc_html( $segment['name'] ); ?></td>
+								<td>
+									<?php
+									echo $segment['time']
+										? esc_html( wp_date( 'j. M, H:i', $segment['time'] ) )
+										: '<span class="nb-segments__muted">' . esc_html__( 'ohne Zeitstempel', 'norwegen-reise' ) . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput
+									?>
+								</td>
+								<td><?php echo esc_html( number_format_i18n( count( $segment['points'] ) ) ); ?></td>
+								<td><?php echo esc_html( number_format_i18n( NB_Geo::track_length_km( $segment['points'] ), 1 ) ); ?> km</td>
+								<td>
+									<label>
+										<input type="checkbox" name="nb_segments[<?php echo esc_attr( $index ); ?>][remove]" value="1" />
+										<span class="screen-reader-text"><?php esc_html_e( 'Diese Aufzeichnung entfernen', 'norwegen-reise' ); ?></span>
+									</label>
+								</td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+
+				<p class="description">
+					<?php esc_html_e( 'Die Aufzeichnungen werden in dieser Reihenfolge zu einer Linie verbunden. Beim Hochladen neuer Dateien sortieren sie sich automatisch nach Aufnahmezeit; über die Nummern lässt sich das jederzeit korrigieren.', 'norwegen-reise' ); ?>
 				</p>
 			<?php else : ?>
 				<p class="nb-track-status"><?php esc_html_e( 'Für diesen Tag ist noch keine Route hinterlegt.', 'norwegen-reise' ); ?></p>
 			<?php endif; ?>
 
 			<p>
-				<label class="nb-label" for="nb_track_file"><?php esc_html_e( 'GPX- oder GeoJSON-Datei hochladen', 'norwegen-reise' ); ?></label>
-				<input type="file" id="nb_track_file" name="nb_track_file" accept=".gpx,.geojson,.json" />
-				<span class="description"><?php esc_html_e( 'Track aus Komoot, Strava, Garmin oder einer Handy-App. Der Track wird beim Speichern eingelesen und automatisch vereinfacht.', 'norwegen-reise' ); ?></span>
+				<label class="nb-label" for="nb_track_files"><?php esc_html_e( 'GPX- oder GeoJSON-Dateien hinzufügen', 'norwegen-reise' ); ?></label>
+				<input type="file" id="nb_track_files" name="nb_track_files[]" accept=".gpx,.geojson,.json" multiple="multiple" />
+				<span class="description">
+					<?php esc_html_e( 'Mehrere Dateien auf einmal möglich – etwa die Tagesstrecke vom Handy und die Wanderung von der Uhr. Sie werden beim Speichern eingelesen, vereinfacht und nach Aufnahmezeit einsortiert.', 'norwegen-reise' ); ?>
+				</span>
 			</p>
 
-			<?php if ( $track ) : ?>
+			<?php if ( $segments ) : ?>
 				<p>
 					<label>
 						<input type="checkbox" name="nb_track_delete" value="1" />
-						<?php esc_html_e( 'Vorhandenen Track beim Speichern löschen', 'norwegen-reise' ); ?>
+						<?php esc_html_e( 'Alle Aufzeichnungen dieses Tages löschen', 'norwegen-reise' ); ?>
 					</label>
 				</p>
 			<?php endif; ?>
@@ -269,14 +336,26 @@ class NB_Meta {
 			<p>
 				<label>
 					<input type="checkbox" name="nb_track_waypoints" value="1" checked="checked" />
-					<?php esc_html_e( 'Wegpunkte aus der Datei als Fähnchen übernehmen', 'norwegen-reise' ); ?>
+					<?php esc_html_e( 'Wegpunkte aus den Dateien als Fähnchen übernehmen', 'norwegen-reise' ); ?>
 				</label>
 			</p>
 
 			<div id="nb-track-map" class="nb-map" aria-label="<?php esc_attr_e( 'Vorschau der Tagesroute', 'norwegen-reise' ); ?>"></div>
-			<p class="description"><?php esc_html_e( 'In der Karte kannst du Fähnchen verschieben. Die Vorschau zeigt den gespeicherten Stand.', 'norwegen-reise' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Jede Aufzeichnung hat in der Vorschau ihre eigene Farbe. Fähnchen lassen sich in der Karte verschieben.', 'norwegen-reise' ); ?></p>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Colour used to tell the recordings of one day apart in the preview.
+	 *
+	 * @param int $index Position of the segment.
+	 * @return string
+	 */
+	public static function segment_color( $index ) {
+		$colors = array( '#4fe0b0', '#39a0ff', '#a86bff', '#ffb347', '#ff6b8a', '#3ddad7' );
+
+		return $colors[ $index % count( $colors ) ];
 	}
 
 	/**
@@ -467,65 +546,267 @@ class NB_Meta {
 	 */
 	private static function save_track( $post_id ) {
 		$waypoints = array();
+		$segments  = self::get_segments( $post_id );
 
 		if ( ! empty( $_POST['nb_track_delete'] ) ) {
-			delete_post_meta( $post_id, '_nb_track' );
-			delete_post_meta( $post_id, '_nb_track_source' );
+			$segments = array();
 		}
 
-		if ( isset( $_FILES['nb_track_file'] ) && ! empty( $_FILES['nb_track_file']['tmp_name'] ) && UPLOAD_ERR_OK === (int) $_FILES['nb_track_file']['error'] ) {
-			$tmp  = $_FILES['nb_track_file']['tmp_name']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
-			$name = sanitize_file_name( wp_unslash( $_FILES['nb_track_file']['name'] ) );
-			$type = strtolower( pathinfo( $name, PATHINFO_EXTENSION ) );
+		$segments = self::apply_segment_form( $segments );
+		$imported = self::import_uploads( $post_id, $segments, $waypoints );
 
-			if ( ! in_array( $type, array( 'gpx', 'geojson', 'json' ), true ) ) {
-				self::add_notice( $post_id, __( 'Nur GPX-, GeoJSON- oder JSON-Dateien können importiert werden.', 'norwegen-reise' ), 'error' );
-			} elseif ( ! is_uploaded_file( $tmp ) ) {
-				self::add_notice( $post_id, __( 'Die hochgeladene Datei konnte nicht gelesen werden.', 'norwegen-reise' ), 'error' );
-			} else {
-				$contents = file_get_contents( $tmp ); // phpcs:ignore WordPress.WP.AlternativeFunctions
-				$parsed   = NB_GPX::parse( (string) $contents, $name );
+		// New files sort themselves in by recording time; otherwise the numbers
+		// from the form decide.
+		$segments = self::sort_segments( $segments, $imported > 0 );
 
-				if ( is_wp_error( $parsed ) ) {
-					self::add_notice( $post_id, $parsed->get_error_message(), 'error' );
-				} else {
-					if ( $parsed['track'] ) {
-						$track = NB_Geo::limit_points( $parsed['track'] );
+		self::store_segments( $post_id, $segments );
 
-						update_post_meta( $post_id, '_nb_track', wp_json_encode( $track ) );
-						update_post_meta( $post_id, '_nb_track_source', $name );
-
-						self::add_notice(
-							$post_id,
-							sprintf(
-								/* translators: 1: number of points, 2: distance */
-								__( 'Track importiert: %1$d Punkte, %2$s km.', 'norwegen-reise' ),
-								count( $track ),
-								number_format_i18n( NB_Geo::track_length_km( $track ), 1 )
-							),
-							'success'
-						);
-					}
-
-					if ( ! empty( $_POST['nb_track_waypoints'] ) ) {
-						$waypoints = $parsed['waypoints'];
-					}
-				}
-			}
-		}
-
-		// Without a manual distance, the track decides.
+		// Without a manual distance, the recordings decide.
 		$manual = get_post_meta( $post_id, '_nb_distance_km', true );
 
 		if ( '' === $manual || null === $manual ) {
-			$track = self::get_track( $post_id );
+			$distance = self::segments_length_km( $segments );
 
-			if ( $track ) {
-				update_post_meta( $post_id, '_nb_distance_km', (string) round( NB_Geo::track_length_km( $track ), 1 ) );
+			if ( $distance > 0 ) {
+				update_post_meta( $post_id, '_nb_distance_km', (string) round( $distance, 1 ) );
 			}
 		}
 
 		return $waypoints;
+	}
+
+	/**
+	 * Distance actually covered on a day.
+	 *
+	 * Sums the recordings instead of measuring the merged line: the straight
+	 * hop between two recordings is drawn on the map, but nobody travelled it.
+	 *
+	 * @param array $segments Segments.
+	 * @return float
+	 */
+	public static function segments_length_km( $segments ) {
+		$total = 0.0;
+
+		foreach ( $segments as $segment ) {
+			$total += NB_Geo::track_length_km( $segment['points'] );
+		}
+
+		return $total;
+	}
+
+	/**
+	 * Applies the ordering numbers and removals from the meta box.
+	 *
+	 * @param array $segments Stored segments.
+	 * @return array
+	 */
+	private static function apply_segment_form( $segments ) {
+		$rows = isset( $_POST['nb_segments'] ) && is_array( $_POST['nb_segments'] ) ? wp_unslash( $_POST['nb_segments'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+
+		if ( ! $rows ) {
+			return $segments;
+		}
+
+		$kept = array();
+
+		foreach ( $segments as $index => $segment ) {
+			if ( ! isset( $rows[ $index ] ) ) {
+				$kept[] = $segment;
+				continue;
+			}
+
+			if ( ! empty( $rows[ $index ]['remove'] ) ) {
+				continue;
+			}
+
+			if ( isset( $rows[ $index ]['order'] ) && '' !== $rows[ $index ]['order'] ) {
+				$segment['order'] = (int) $rows[ $index ]['order'];
+			}
+
+			$kept[] = $segment;
+		}
+
+		return $kept;
+	}
+
+	/**
+	 * Reads every uploaded track file and appends it as its own segment.
+	 *
+	 * @param int   $post_id   Post ID.
+	 * @param array $segments  Segment list, by reference.
+	 * @param array $waypoints Collected waypoints, by reference.
+	 * @return int Number of imported recordings.
+	 */
+	private static function import_uploads( $post_id, &$segments, &$waypoints ) {
+		if ( empty( $_FILES['nb_track_files'] ) || ! isset( $_FILES['nb_track_files']['name'] ) ) {
+			return 0;
+		}
+
+		$files    = $_FILES['nb_track_files']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		$names    = (array) $files['name'];
+		$imported = 0;
+		$take_wp  = ! empty( $_POST['nb_track_waypoints'] );
+
+		foreach ( $names as $key => $raw_name ) {
+			if ( empty( $files['tmp_name'][ $key ] ) || UPLOAD_ERR_OK !== (int) $files['error'][ $key ] ) {
+				continue;
+			}
+
+			$name = sanitize_file_name( wp_unslash( $raw_name ) );
+			$tmp  = $files['tmp_name'][ $key ];
+			$type = strtolower( pathinfo( $name, PATHINFO_EXTENSION ) );
+
+			if ( ! in_array( $type, array( 'gpx', 'geojson', 'json' ), true ) ) {
+				/* translators: %s: file name */
+				self::add_notice( $post_id, sprintf( __( '%s wurde übersprungen – nur GPX, GeoJSON und JSON können importiert werden.', 'norwegen-reise' ), $name ), 'error' );
+				continue;
+			}
+
+			if ( ! is_uploaded_file( $tmp ) ) {
+				/* translators: %s: file name */
+				self::add_notice( $post_id, sprintf( __( '%s konnte nicht gelesen werden.', 'norwegen-reise' ), $name ), 'error' );
+				continue;
+			}
+
+			$contents = file_get_contents( $tmp ); // phpcs:ignore WordPress.WP.AlternativeFunctions
+			$parsed   = NB_GPX::parse( (string) $contents, $name );
+
+			if ( is_wp_error( $parsed ) ) {
+				self::add_notice( $post_id, $name . ': ' . $parsed->get_error_message(), 'error' );
+				continue;
+			}
+
+			$file_segments = isset( $parsed['segments'] ) ? $parsed['segments'] : array();
+			$multi         = count( $file_segments ) > 1;
+
+			foreach ( $file_segments as $position => $segment ) {
+				if ( empty( $segment['points'] ) ) {
+					continue;
+				}
+
+				$points = NB_Geo::limit_points( $segment['points'], self::MAX_SEGMENT_POINTS );
+
+				$segments[] = array(
+					'name'   => $multi ? $name . ' #' . ( $position + 1 ) : $name,
+					'points' => $points,
+					'time'   => (int) $segment['time'],
+					'order'  => count( $segments ),
+				);
+
+				++$imported;
+
+				self::add_notice(
+					$post_id,
+					sprintf(
+						/* translators: 1: file name, 2: number of points, 3: distance */
+						__( '%1$s importiert: %2$d Punkte, %3$s km.', 'norwegen-reise' ),
+						$name,
+						count( $points ),
+						number_format_i18n( NB_Geo::track_length_km( $points ), 1 )
+					),
+					'success'
+				);
+			}
+
+			if ( $take_wp && ! empty( $parsed['waypoints'] ) ) {
+				$waypoints = array_merge( $waypoints, $parsed['waypoints'] );
+			}
+		}
+
+		return $imported;
+	}
+
+	/**
+	 * Brings the recordings of a day into their final order.
+	 *
+	 * With $by_time the recording timestamps decide, which is what happens right
+	 * after an import. Recordings without a timestamp keep their relative
+	 * position at the end, because there is nothing to sort them by.
+	 *
+	 * @param array $segments Segments.
+	 * @param bool  $by_time  Sort by recording time instead of the manual order.
+	 * @return array
+	 */
+	private static function sort_segments( $segments, $by_time ) {
+		$indexed = array();
+
+		foreach ( array_values( $segments ) as $index => $segment ) {
+			$indexed[] = array(
+				'index'   => $index,
+				'segment' => $segment,
+			);
+		}
+
+		usort(
+			$indexed,
+			function ( $a, $b ) use ( $by_time ) {
+				$first  = $a['segment'];
+				$second = $b['segment'];
+
+				if ( $by_time ) {
+					$a_untimed = $first['time'] > 0 ? 0 : 1;
+					$b_untimed = $second['time'] > 0 ? 0 : 1;
+
+					if ( $a_untimed !== $b_untimed ) {
+						return $a_untimed - $b_untimed;
+					}
+
+					if ( 0 === $a_untimed && $first['time'] !== $second['time'] ) {
+						return $first['time'] < $second['time'] ? -1 : 1;
+					}
+				} elseif ( $first['order'] !== $second['order'] ) {
+					return $first['order'] < $second['order'] ? -1 : 1;
+				}
+
+				// Stable: equal keys keep the order they came in.
+				return $a['index'] - $b['index'];
+			}
+		);
+
+		$sorted = array();
+
+		foreach ( $indexed as $position => $entry ) {
+			$segment          = $entry['segment'];
+			$segment['order'] = $position;
+			$sorted[]         = $segment;
+		}
+
+		return $sorted;
+	}
+
+	/**
+	 * Writes the segments and the merged track they add up to.
+	 *
+	 * `_nb_track` stays the single flat line everything else reads, so the map,
+	 * the REST payload and the theme need to know nothing about segments.
+	 *
+	 * @param int   $post_id  Post ID.
+	 * @param array $segments Segments in their final order.
+	 */
+	private static function store_segments( $post_id, $segments ) {
+		if ( ! $segments ) {
+			delete_post_meta( $post_id, '_nb_track_segments' );
+			delete_post_meta( $post_id, '_nb_track' );
+			delete_post_meta( $post_id, '_nb_track_source' );
+
+			return;
+		}
+
+		$merged = array();
+		$names  = array();
+
+		foreach ( $segments as $segment ) {
+			$merged  = array_merge( $merged, $segment['points'] );
+			$names[] = $segment['name'];
+		}
+
+		if ( count( $merged ) > self::MAX_TRACK_POINTS ) {
+			$merged = NB_Geo::limit_points( $merged, self::MAX_TRACK_POINTS );
+		}
+
+		update_post_meta( $post_id, '_nb_track_segments', wp_json_encode( $segments, JSON_UNESCAPED_UNICODE ) );
+		update_post_meta( $post_id, '_nb_track', wp_json_encode( $merged ) );
+		update_post_meta( $post_id, '_nb_track_source', implode( ', ', $names ) );
 	}
 
 	/**
@@ -671,9 +952,74 @@ class NB_Meta {
 			return array();
 		}
 
+		return self::clean_points( $track );
+	}
+
+	/**
+	 * Returns the single recordings a day is made of.
+	 *
+	 * Days that were saved before multi-file support show up as one segment, so
+	 * nothing has to be migrated by hand.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return array List of ['name' => string, 'points' => array, 'time' => int, 'order' => int].
+	 */
+	public static function get_segments( $post_id ) {
+		$raw = get_post_meta( $post_id, '_nb_track_segments', true );
+
+		if ( $raw ) {
+			$stored   = is_array( $raw ) ? $raw : json_decode( $raw, true );
+			$segments = array();
+
+			if ( is_array( $stored ) ) {
+				foreach ( $stored as $index => $segment ) {
+					if ( empty( $segment['points'] ) || ! is_array( $segment['points'] ) ) {
+						continue;
+					}
+
+					$segments[] = array(
+						'name'   => isset( $segment['name'] ) ? (string) $segment['name'] : '',
+						'points' => self::clean_points( $segment['points'] ),
+						'time'   => isset( $segment['time'] ) ? (int) $segment['time'] : 0,
+						'order'  => isset( $segment['order'] ) ? (int) $segment['order'] : $index,
+					);
+				}
+			}
+
+			if ( $segments ) {
+				return $segments;
+			}
+		}
+
+		// Legacy: one track, no segments.
+		$track = self::get_track( $post_id );
+
+		if ( ! $track ) {
+			return array();
+		}
+
+		$name = get_post_meta( $post_id, '_nb_track_source', true );
+
+		return array(
+			array(
+				'name'   => $name ? $name : __( 'Aufzeichnung', 'norwegen-reise' ),
+				'points' => $track,
+				'time'   => 0,
+				'order'  => 0,
+			),
+		);
+	}
+
+	/**
+	 * Validates a list of coordinate pairs.
+	 *
+	 * @param array $points Raw points.
+	 * @return array
+	 */
+	private static function clean_points( $points ) {
 		$clean = array();
 
-		foreach ( $track as $pair ) {
+		foreach ( $points as $pair ) {
 			if ( is_array( $pair ) && isset( $pair[0], $pair[1] ) ) {
 				$clean[] = array( (float) $pair[0], (float) $pair[1] );
 			}

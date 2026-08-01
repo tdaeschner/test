@@ -81,10 +81,11 @@ Pro Tag ein Beitrag unter **Norwegen → Neuer Tag**:
 2. Rechts unter **Tages-Eckdaten**: Tagesnummer (bestimmt die Reihenfolge auf
    der Karte), Datum, Etappe („Geiranger → Trollstigen“) und optional Wetter.
    Die Distanz darf leer bleiben — sie wird aus dem Track berechnet.
-3. Unter **Route des Tages** die GPX-Datei hochladen (Komoot, Strava, Garmin,
-   Handy-App — GPX und GeoJSON werden gelesen). Der Track wird beim Speichern
-   eingelesen und automatisch von mehreren tausend auf ~1.200 Punkte reduziert,
-   ohne dass sich die Linie sichtbar verändert.
+3. Unter **Route des Tages** die GPX-Dateien hochladen (Komoot, Strava, Garmin,
+   Handy-App, Apple Watch über HealthFit — GPX und GeoJSON werden gelesen).
+   Jede Aufzeichnung wird beim Speichern eingelesen und automatisch von
+   mehreren tausend auf ~1.200 Punkte reduziert, ohne dass sich die Linie
+   sichtbar verändert. **Mehrere Dateien pro Tag sind möglich** — siehe unten.
 4. Unter **Fähnchen & Highlights** die Momente des Tages setzen: Titel, ein bis
    zwei Sätze, Symbol (Aussicht, Wanderung, Wasserfall, Tiere, Essen,
    Übernachtung, Foto-Spot, Highlight) und optional ein Bild fürs Popup.
@@ -97,6 +98,31 @@ Pro Tag ein Beitrag unter **Norwegen → Neuer Tag**:
 Sobald der Tag veröffentlicht ist, wächst die Route auf der Startseite
 automatisch weiter. Entwürfe erscheinen nicht auf der Karte — ihr könnt also
 vorschreiben und später freigeben.
+
+### Mehrere Aufzeichnungen an einem Tag
+
+Ein Reisetag besteht selten aus einer einzigen Datei: die Tagesstrecke kommt
+vom Handy, die Wanderung von der Uhr, dazwischen war das Tracking vielleicht
+kurz aus. Deshalb nimmt ein Tag beliebig viele Dateien.
+
+* **Alle auf einmal auswählen** oder nacheinander hochladen — neue Dateien
+  kommen zu den vorhandenen dazu, sie ersetzen sie nicht.
+* **Sortiert wird nach Aufnahmezeit.** Der Zeitstempel steckt in jeder GPX aus
+  einer Tracking-App. Es ist also egal, in welcher Reihenfolge du hochlädst;
+  die Wanderung von 13:30 landet automatisch hinter der Fahrt von 08:00.
+* **Dateien ohne Zeitstempel** — etwa in gpx.studio nachgezeichnete Strecken —
+  landen hinten. Über die Nummern in der Tabelle lässt sich die Reihenfolge
+  jederzeit von Hand korrigieren; sobald du eine Nummer änderst, gilt sie.
+* **Jede Aufzeichnung hat in der Vorschaukarte ihre eigene Farbe**, passend zum
+  Farbpunkt in der Tabelle. Einzelne Aufzeichnungen lassen sich per Häkchen
+  wieder entfernen.
+* **Lücken zwischen zwei Aufzeichnungen** werden auf der Karte mit einer
+  geraden Linie überbrückt. Das sieht man kaum, wenn die Wanderung dort
+  beginnt, wo das Auto stand. Die angezeigte **Distanz zählt diese Lücken
+  nicht mit** — sie ist die Summe der tatsächlich aufgezeichneten Strecken.
+
+Enthält eine einzelne GeoJSON-Datei mehrere Linien, wird jede davon zu einer
+eigenen Aufzeichnung.
 
 ### Artikel per KI/App anlegen
 

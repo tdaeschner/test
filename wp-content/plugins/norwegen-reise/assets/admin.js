@@ -289,24 +289,37 @@
 		map.addControl( new window.maplibregl.NavigationControl( { visualizePitch: true } ), 'top-right' );
 
 		map.on( 'load', function () {
-			if ( track.length ) {
-				map.addSource( 'nb-day-track', {
+			var segments = config.segments && config.segments.length
+				? config.segments
+				: ( track.length ? [ { points: track, color: '#4fe0b0', name: '' } ] : [] );
+
+			// Jede Aufzeichnung bekommt ihre eigene Farbe, passend zur Tabelle.
+			segments.forEach( function ( segment, index ) {
+				if ( ! segment.points || segment.points.length < 2 ) {
+					return;
+				}
+
+				var id = 'nb-segment-' + index;
+
+				map.addSource( id, {
 					type: 'geojson',
-					data: window.NBMapStyle.lineFeature( track )
+					data: window.NBMapStyle.lineFeature( segment.points )
 				} );
 
 				map.addLayer( {
-					id: 'nb-day-track-line',
+					id: id + '-line',
 					type: 'line',
-					source: 'nb-day-track',
+					source: id,
 					layout: { 'line-cap': 'round', 'line-join': 'round' },
 					paint: {
-						'line-color': '#4fe0b0',
+						'line-color': segment.color || '#4fe0b0',
 						'line-width': 4,
 						'line-opacity': 0.9
 					}
 				} );
+			} );
 
+			if ( track.length ) {
 				window.NBMapStyle.fitToPoints( map, track, { padding: 50 } );
 			}
 

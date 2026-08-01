@@ -182,3 +182,31 @@
 		flex: 1 1 140px;
 	}
 }
+
+/* Recordings that make up one day. */
+
+.nb-segments {
+	margin: 12px 0;
+}
+
+.nb-segments__order {
+	width: 110px;
+}
+
+.nb-segments__swatch {
+	display: inline-block;
+	width: 10px;
+	height: 10px;
+	border-radius: 3px;
+	margin-right: 6px;
+	vertical-align: middle;
+}
+
+.nb-segments__muted {
+	color: #787c82;
+	font-style: italic;
+}
+
+.nb-segments td {
+	vertical-align: middle;
+}

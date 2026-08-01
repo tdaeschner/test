@@ -18,7 +18,8 @@ class NB_GPX {
 	 * @param string $contents Raw file contents.
 	 * @param string $filename Original file name, used to pick the parser.
 	 * @return array|WP_Error {
-	 *     @type array $track     List of [lng, lat] pairs.
+	 *     @type array $track     All points as [lng, lat] pairs, segments joined.
+	 *     @type array $segments  One entry per recording: ['points' => array, 'time' => int].
 	 *     @type array $waypoints List of ['title' => string, 'lng' => float, 'lat' => float].
 	 * }
 	 */
@@ -54,12 +55,20 @@ class NB_GPX {
 		}
 
 		$track = array();
+		$time  = 0;
 
 		foreach ( $xml->xpath( '//*[local-name()="trkpt"]' ) as $point ) {
 			$coord = self::point_from_attributes( $point );
 
-			if ( $coord ) {
-				$track[] = $coord;
+			if ( ! $coord ) {
+				continue;
+			}
+
+			$track[] = $coord;
+
+			// The first timestamp decides where this recording sits in the day.
+			if ( ! $time ) {
+				$time = self::time_from_point( $point );
 			}
 		}
 
@@ -69,6 +78,17 @@ class NB_GPX {
 
 				if ( $coord ) {
 					$track[] = $coord;
+				}
+			}
+		}
+
+		if ( ! $time ) {
+			// Some exports carry the recording time only in the track header.
+			foreach ( $xml->xpath( '//*[local-name()="metadata"]/*[local-name()="time"] | //*[local-name()="trk"]/*[local-name()="time"]' ) as $node ) {
+				$time = self::to_timestamp( (string) $node );
+
+				if ( $time ) {
+					break;
 				}
 			}
 		}
@@ -95,8 +115,48 @@ class NB_GPX {
 
 		return array(
 			'track'     => $track,
+			'segments'  => $track ? array(
+				array(
+					'points' => $track,
+					'time'   => $time,
+				),
+			) : array(),
 			'waypoints' => $waypoints,
 		);
+	}
+
+	/**
+	 * Reads the <time> child of a track point.
+	 *
+	 * @param SimpleXMLElement $point Track point.
+	 * @return int Unix timestamp, 0 when absent.
+	 */
+	private static function time_from_point( $point ) {
+		$nodes = $point->xpath( '*[local-name()="time"]' );
+
+		if ( ! $nodes ) {
+			return 0;
+		}
+
+		return self::to_timestamp( (string) $nodes[0] );
+	}
+
+	/**
+	 * Converts an ISO 8601 timestamp into a Unix timestamp.
+	 *
+	 * @param string $value Raw value.
+	 * @return int
+	 */
+	private static function to_timestamp( $value ) {
+		$value = trim( $value );
+
+		if ( '' === $value ) {
+			return 0;
+		}
+
+		$timestamp = strtotime( $value );
+
+		return $timestamp ? (int) $timestamp : 0;
 	}
 
 	/**
@@ -113,17 +173,33 @@ class NB_GPX {
 			return new WP_Error( 'nb_invalid_json', __( 'Die GeoJSON-Datei konnte nicht gelesen werden.', 'norwegen-reise' ) );
 		}
 
-		$track     = array();
+		$lines     = array();
 		$waypoints = array();
 
-		self::collect_geojson( $data, $track, $waypoints );
+		self::collect_geojson( $data, $lines, $waypoints );
 
-		if ( ! $track && ! $waypoints ) {
+		if ( ! $lines && ! $waypoints ) {
 			return new WP_Error( 'nb_no_points', __( 'In der GeoJSON-Datei wurden keine Koordinaten gefunden.', 'norwegen-reise' ) );
+		}
+
+		$track    = array();
+		$segments = array();
+
+		foreach ( $lines as $line ) {
+			if ( ! $line['points'] ) {
+				continue;
+			}
+
+			$track      = array_merge( $track, $line['points'] );
+			$segments[] = array(
+				'points' => $line['points'],
+				'time'   => $line['time'],
+			);
 		}
 
 		return array(
 			'track'     => $track,
+			'segments'  => $segments,
 			'waypoints' => $waypoints,
 		);
 	}
@@ -132,17 +208,17 @@ class NB_GPX {
 	 * Walks a GeoJSON structure and collects coordinates.
 	 *
 	 * @param array $node      Current node.
-	 * @param array $track     Collected line points, by reference.
+	 * @param array $lines     Collected lines as ['points' => array, 'time' => int], by reference.
 	 * @param array $waypoints Collected point features, by reference.
 	 */
-	private static function collect_geojson( $node, &$track, &$waypoints ) {
+	private static function collect_geojson( $node, &$lines, &$waypoints ) {
 		if ( ! is_array( $node ) ) {
 			return;
 		}
 
 		if ( isset( $node['features'] ) && is_array( $node['features'] ) ) {
 			foreach ( $node['features'] as $feature ) {
-				self::collect_geojson( $feature, $track, $waypoints );
+				self::collect_geojson( $feature, $lines, $waypoints );
 			}
 
 			return;
@@ -150,13 +226,14 @@ class NB_GPX {
 
 		if ( isset( $node['geometries'] ) && is_array( $node['geometries'] ) ) {
 			foreach ( $node['geometries'] as $geometry ) {
-				self::collect_geojson( $geometry, $track, $waypoints );
+				self::collect_geojson( $geometry, $lines, $waypoints );
 			}
 
 			return;
 		}
 
 		$title = '';
+		$time  = 0;
 
 		if ( isset( $node['properties'] ) && is_array( $node['properties'] ) ) {
 			foreach ( array( 'name', 'title', 'Name' ) as $key ) {
@@ -165,12 +242,20 @@ class NB_GPX {
 					break;
 				}
 			}
+
+			// Some exporters keep per-point times in coordTimes, others a start time.
+			if ( ! empty( $node['properties']['coordTimes'][0] ) ) {
+				$time = self::to_timestamp( (string) $node['properties']['coordTimes'][0] );
+			} elseif ( ! empty( $node['properties']['time'] ) ) {
+				$time = self::to_timestamp( (string) $node['properties']['time'] );
+			}
 		}
 
 		if ( isset( $node['geometry'] ) && is_array( $node['geometry'] ) ) {
-			$geometry         = $node['geometry'];
+			$geometry            = $node['geometry'];
 			$geometry['__title'] = $title;
-			self::collect_geojson( $geometry, $track, $waypoints );
+			$geometry['__time']  = $time;
+			self::collect_geojson( $geometry, $lines, $waypoints );
 
 			return;
 		}
@@ -193,23 +278,41 @@ class NB_GPX {
 				break;
 
 			case 'LineString':
+				$points = array();
+
 				foreach ( $node['coordinates'] as $pair ) {
 					$coord = self::clean_pair( $pair );
 
 					if ( $coord ) {
-						$track[] = $coord;
+						$points[] = $coord;
 					}
+				}
+
+				if ( $points ) {
+					$lines[] = array(
+						'points' => $points,
+						'time'   => isset( $node['__time'] ) ? (int) $node['__time'] : $time,
+					);
 				}
 				break;
 
 			case 'MultiLineString':
 				foreach ( $node['coordinates'] as $line ) {
+					$points = array();
+
 					foreach ( $line as $pair ) {
 						$coord = self::clean_pair( $pair );
 
 						if ( $coord ) {
-							$track[] = $coord;
+							$points[] = $coord;
 						}
+					}
+
+					if ( $points ) {
+						$lines[] = array(
+							'points' => $points,
+							'time'   => isset( $node['__time'] ) ? (int) $node['__time'] : $time,
+						);
 					}
 				}
 				break;

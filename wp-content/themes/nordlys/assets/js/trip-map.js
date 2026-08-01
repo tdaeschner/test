@@ -627,7 +627,12 @@
 		}
 
 		if ( hud.distance ) {
-			hud.distance.textContent = Math.round( route.totalKm * progress ) + ' ' + data.i18n.km;
+			// Gezählt wird die tatsächlich gefahrene Strecke, nicht die Länge
+			// der gezeichneten Linie - die überbrückt auch Lücken zwischen
+			// zwei Aufzeichnungen eines Tages.
+			var total = data.trip && data.trip.totalKm ? data.trip.totalKm : route.totalKm;
+
+			hud.distance.textContent = Math.round( total * progress ) + ' ' + data.i18n.km;
 		}
 	}
 

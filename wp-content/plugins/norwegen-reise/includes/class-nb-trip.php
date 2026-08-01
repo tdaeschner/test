@@ -62,11 +62,12 @@ class NB_Trip {
 			)
 		);
 
-		$days       = array();
-		$all_points = array();
-		$lengths    = array();
-		$total_km   = 0.0;
-		$pin_count  = 0;
+		$days        = array();
+		$all_points  = array();
+		$lengths     = array();
+		$total_km    = 0.0;
+		$travelled   = 0.0;
+		$pin_count   = 0;
 
 		foreach ( $posts as $index => $post ) {
 			$track  = NB_Meta::get_track( $post->ID );
@@ -96,6 +97,10 @@ class NB_Trip {
 			}
 
 			$distance = get_post_meta( $post->ID, '_nb_distance_km', true );
+
+			// The line on the map bridges the gaps between recordings; the
+			// distance shown to readers counts only what was really travelled.
+			$travelled += '' === $distance ? $length : (float) $distance;
 
 			$days[] = array(
 				'id'        => $post->ID,
@@ -156,7 +161,8 @@ class NB_Trip {
 				'startDate'   => NB_Settings::get( 'start_date' ),
 				'daysPlanned' => (int) NB_Settings::get( 'days_planned' ),
 				'daysOnline'  => count( $days ),
-				'totalKm'     => round( $total_km, 1 ),
+				'totalKm'     => round( $travelled, 1 ),
+				'drawnKm'     => round( $total_km, 1 ),
 				'pinCount'    => $pin_count,
 			),
 			'style'   => NB_Settings::style_config(),
