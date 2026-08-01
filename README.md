@@ -60,6 +60,19 @@ Die Demo-Daten lassen sich auch ohne WP-CLI erzeugen, etwa auf einer
 Testinstallation beim Hoster: `tools/demo-data.php` nach dem Laden von
 `wp-load.php` einbinden.
 
+### Upload-Grenzen
+
+Die lokale Umgebung erlaubt **512 MB pro Datei** und bis zu 60 Dateien auf
+einmal. Die Werte stehen in `tools/php-uploads.ini` und werden dem Container
+als `conf.d/uploads.ini` untergeschoben — direkt aus WordPress heraus lassen
+sich `upload_max_filesize` und `post_max_size` nämlich nicht setzen.
+
+Auf eurem Hosting gilt das nicht automatisch. Was dort möglich ist, steht unter
+**Werkzeuge → Website-Zustand → Bericht → Medienverarbeitung**. Reicht es
+nicht, hilft je nach Anbieter eine eigene `php.ini`, ein Eintrag in der
+`.htaccess` oder eine Einstellung im Kundenmenü — viele Hoster begrenzen
+standardmäßig auf 8 bis 64 MB.
+
 Worauf beim Testen zu achten ist:
 
 * Beim Scrollen füllt sich die Linie, der Punkt an der Spitze wandert mit,

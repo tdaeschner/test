@@ -33,18 +33,20 @@ services:
       WORDPRESS_DB_USER: wordpress
       WORDPRESS_DB_PASSWORD: wordpress
       WORDPRESS_DB_NAME: wordpress
-      # Uploads dürfen groß sein - Fotos und Videos von der Reise.
       WORDPRESS_CONFIG_EXTRA: |
         define( 'WP_DEBUG', true );
-        define( 'WP_DEBUG_DISPLAY', true );
-        @ini_set( 'upload_max_filesize', '256M' );
-        @ini_set( 'post_max_size', '256M' );
+        define( 'WP_DEBUG_LOG', true );
+        define( 'WP_DEBUG_DISPLAY', false );
+        define( 'WP_MEMORY_LIMIT', '512M' );
+        define( 'WP_MAX_MEMORY_LIMIT', '512M' );
     volumes:
       - wp:/var/www/html
       # Nur Plugin und Theme kommen aus dem Repository, der Rest ist Wegwerf-WordPress.
       - ./wp-content/plugins/norwegen-reise:/var/www/html/wp-content/plugins/norwegen-reise
       - ./wp-content/themes/nordlys:/var/www/html/wp-content/themes/nordlys
       - ./tools:/var/www/html/tools
+      # Upload-Grenzen: müssen aus einer ini-Datei kommen, ini_set() greift hier nicht.
+      - ./tools/php-uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro
 
   # Wird nur für Kommandos benutzt: docker compose run --rm wpcli <befehl>
   wpcli:
