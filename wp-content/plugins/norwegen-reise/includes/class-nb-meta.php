@@ -171,6 +171,7 @@ class NB_Meta {
 
 		wp_enqueue_media();
 		wp_enqueue_style( 'maplibre-gl' );
+		wp_enqueue_style( 'nb-map' );
 		wp_enqueue_style( 'nb-admin', NB_URL . 'assets/admin.css', array( 'maplibre-gl' ), NB_VERSION );
 		wp_enqueue_script( 'nb-admin', NB_URL . 'assets/admin.js', array( 'maplibre-gl', 'nb-map-style', 'jquery' ), NB_VERSION, true );
 
@@ -195,6 +196,7 @@ class NB_Meta {
 				'pins'     => self::get_pins( $post_id ),
 				'fallback' => NB_Settings::default_center(),
 				'i18n'     => array(
+					'title'      => __( 'Kartenstil', 'norwegen-reise' ),
 					'pickHint'   => __( 'Klicke in die Karte, um die Position zu setzen.', 'norwegen-reise' ),
 					'pickCancel' => __( 'Abbrechen', 'norwegen-reise' ),
 					'pickStart'  => __( 'Position in Karte wählen', 'norwegen-reise' ),

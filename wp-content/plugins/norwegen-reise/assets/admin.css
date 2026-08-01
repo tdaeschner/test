@@ -210,3 +210,41 @@
 .nb-segments td {
 	vertical-align: middle;
 }
+
+/* Auswahl der Kartenstile auf der Einstellungsseite. */
+
+.nb-basemap-table {
+	border-collapse: collapse;
+	margin-bottom: 8px;
+}
+
+.nb-basemap-table th,
+.nb-basemap-table td {
+	padding: 4px 14px 4px 0;
+	text-align: left;
+	vertical-align: middle;
+}
+
+.nb-basemap-table thead th {
+	font-size: 11px;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: #646970;
+	font-weight: 600;
+	border-bottom: 1px solid #dcdcde;
+}
+
+.nb-basemap-table label {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	cursor: pointer;
+}
+
+.nb-basemap-swatch {
+	display: inline-block;
+	width: 22px;
+	height: 22px;
+	border-radius: 4px;
+	border: 1px solid #c3c4c7;
+}

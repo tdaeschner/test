@@ -3,7 +3,7 @@
  * Plugin Name:       Norwegen Reise
  * Plugin URI:        https://github.com/tdaeschner/norwegen-blog
  * Description:       Reisetagebuch-Datenmodell für den Norwegen-Travelblog: Reisetage mit GPX-Track, Highlight-Fähnchen, Karten-Daten und REST-Schnittstelle für die scrollbare Route.
- * Version:           1.0.0
+ * Version:           1.1.0
  * Requires at least: 6.4
  * Requires PHP:      7.4
  * Author:            Tobias Däschner
@@ -15,7 +15,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'NB_VERSION', '1.0.0' );
+define( 'NB_VERSION', '1.1.0' );
 define( 'NB_FILE', __FILE__ );
 define( 'NB_PATH', plugin_dir_path( __FILE__ ) );
 define( 'NB_URL', plugin_dir_url( __FILE__ ) );
@@ -68,6 +68,25 @@ function nb_register_shared_assets() {
 		array( 'maplibre-gl' ),
 		NB_VERSION,
 		true
+	);
+
+	// Bedienelemente der Karte, im Frontend wie im Backend gleich.
+	wp_register_style(
+		'nb-map',
+		NB_URL . 'assets/map.css',
+		array( 'maplibre-gl' ),
+		NB_VERSION
+	);
+}
+
+/**
+ * Labels for the base map switcher, shared by every map on the site.
+ *
+ * @return array
+ */
+function nb_map_labels() {
+	return array(
+		'title' => __( 'Kartenstil', 'norwegen-reise' ),
 	);
 }
 

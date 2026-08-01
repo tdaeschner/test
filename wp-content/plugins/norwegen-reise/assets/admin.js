@@ -288,6 +288,8 @@
 
 		map.addControl( new window.maplibregl.NavigationControl( { visualizePitch: true } ), 'top-right' );
 
+		window.NBMapStyle.addBasemapControl( map, config.style, { title: config.i18n.title }, 'top-right' );
+
 		map.on( 'load', function () {
 			var segments = config.segments && config.segments.length
 				? config.segments

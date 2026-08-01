@@ -12,7 +12,18 @@ defined( 'ABSPATH' ) || exit;
  */
 class NB_Trip {
 
-	const CACHE_KEY = 'nb_trip_data_v1';
+	/**
+	 * Cache key of the assembled payload.
+	 *
+	 * The plugin version is part of it: an update changes the shape of the data,
+	 * and a payload cached by the previous version would silently miss the new
+	 * fields until it expires.
+	 *
+	 * @return string
+	 */
+	public static function cache_key() {
+		return 'nb_trip_data_' . substr( md5( NB_VERSION ), 0, 12 );
+	}
 
 	/**
 	 * Returns the trip payload, cached in a transient.
@@ -22,7 +33,7 @@ class NB_Trip {
 	 */
 	public static function get_data( $force = false ) {
 		if ( ! $force ) {
-			$cached = get_transient( self::CACHE_KEY );
+			$cached = get_transient( self::cache_key() );
 
 			if ( is_array( $cached ) ) {
 				return $cached;
@@ -31,7 +42,7 @@ class NB_Trip {
 
 		$data = self::build();
 
-		set_transient( self::CACHE_KEY, $data, DAY_IN_SECONDS );
+		set_transient( self::cache_key(), $data, DAY_IN_SECONDS );
 
 		return $data;
 	}
@@ -40,7 +51,7 @@ class NB_Trip {
 	 * Drops the cached payload.
 	 */
 	public static function flush_cache() {
-		delete_transient( self::CACHE_KEY );
+		delete_transient( self::cache_key() );
 	}
 
 	/**

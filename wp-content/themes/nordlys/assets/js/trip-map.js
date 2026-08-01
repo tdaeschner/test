@@ -212,6 +212,8 @@
 	map.addControl( new window.maplibregl.ScaleControl( { unit: 'metric' } ), 'bottom-left' );
 	map.addControl( new window.maplibregl.FullscreenControl( { container: document.getElementById( 'nb-trip' ) } ), 'top-right' );
 
+	window.NBMapStyle.addBasemapControl( map, data.style, { title: data.i18n.basemap }, 'top-right' );
+
 	var followCamera = true;
 	var activeIndex = -1;
 	var progress = 0;

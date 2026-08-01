@@ -173,6 +173,20 @@ Vier Stile stehen ohne Schlüssel zur Verfügung: **Dunkel** (CARTO Dark Matter,
 Standard und auf das Design abgestimmt), **Hell** (CARTO Positron),
 **Satellit** (Esri World Imagery) und **Topografisch** (OpenTopoMap).
 
+Unter **Norwegen → Einstellungen** legst du fest, welche davon Besucher zur
+Auswahl bekommen und womit die Karte startet. Sind mehrere angehakt, erscheint
+oben rechts in der Karte ein Schalter zum Umschalten — auf der großen
+Reisekarte, auf den Tageskarten und in der Vorschau im Backend.
+
+* Die Wahl bleibt im Browser gespeichert, auch über einen Seitenwechsel hinweg.
+* Beim Umschalten bleiben Route, Fähnchen und Scroll-Fortschritt stehen — es
+  wird nur die Hintergrundebene getauscht.
+* Nicht sichtbare Stile laden **keine** Kacheln und tauchen auch nicht im
+  Quellennachweis auf. Wer nur einen Stil anhakt, bekommt keinen Schalter und
+  exakt so viel Datenverkehr wie vorher.
+* Die noch nicht gefahrene Strecke passt ihren Kontrast an: dezent auf den
+  ruhigen Karten, deutlicher über Satellitenbildern und im topografischen Stil.
+
 Optional lässt sich eine eigene Style-URL eintragen (z. B. ein Vektorstil von
 MapTiler). Mit hinterlegtem MapTiler-Schlüssel kann zusätzlich **3D-Gelände**
 aktiviert werden — für Norwegen durchaus einen Blick wert.

@@ -22,6 +22,20 @@ class NB_Settings {
 		add_action( 'admin_menu', array( __CLASS__, 'add_page' ) );
 		add_action( 'admin_init', array( __CLASS__, 'register' ) );
 		add_action( 'admin_post_nb_upload_planned', array( __CLASS__, 'handle_planned_upload' ) );
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue' ) );
+	}
+
+	/**
+	 * Loads the small stylesheet the settings page needs.
+	 *
+	 * @param string $hook Current admin page.
+	 */
+	public static function enqueue( $hook ) {
+		if ( false === strpos( $hook, 'nb-settings' ) ) {
+			return;
+		}
+
+		wp_enqueue_style( 'nb-admin', NB_URL . 'assets/admin.css', array(), NB_VERSION );
 	}
 
 	/**
@@ -36,6 +50,7 @@ class NB_Settings {
 			'start_date'    => '',
 			'days_planned'  => 17,
 			'basemap'       => 'dark',
+			'basemaps_offered' => array( 'dark', 'light', 'satellite', 'topo' ),
 			'style_url'     => '',
 			'maptiler_key'  => '',
 			'terrain'       => 0,
@@ -83,6 +98,7 @@ class NB_Settings {
 				'attribution' => '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
 				'tileSize'    => 512,
 				'maxzoom'     => 20,
+				'swatch'      => '#141d2b',
 			),
 			'light'     => array(
 				'label'       => __( 'Hell (CARTO Positron)', 'norwegen-reise' ),
@@ -94,6 +110,7 @@ class NB_Settings {
 				'attribution' => '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
 				'tileSize'    => 512,
 				'maxzoom'     => 20,
+				'swatch'      => '#e8eaed',
 			),
 			'satellite' => array(
 				'label'       => __( 'Satellit (Esri World Imagery)', 'norwegen-reise' ),
@@ -101,6 +118,7 @@ class NB_Settings {
 				'attribution' => 'Esri, Maxar, Earthstar Geographics',
 				'tileSize'    => 256,
 				'maxzoom'     => 19,
+				'swatch'      => '#3f5d3a',
 			),
 			'topo'      => array(
 				'label'       => __( 'Topografisch (OpenTopoMap)', 'norwegen-reise' ),
@@ -108,6 +126,7 @@ class NB_Settings {
 				'attribution' => '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)',
 				'tileSize'    => 256,
 				'maxzoom'     => 17,
+				'swatch'      => '#d9d2c0',
 			),
 		);
 	}
@@ -118,17 +137,54 @@ class NB_Settings {
 	 * @return array
 	 */
 	public static function style_config() {
-		$settings = self::all();
-		$basemaps = self::basemaps();
-		$key      = isset( $basemaps[ $settings['basemap'] ] ) ? $settings['basemap'] : 'dark';
-		$basemap  = $basemaps[ $key ];
+		$settings  = self::all();
+		$available = self::basemaps();
+
+		$offered = array();
+
+		foreach ( (array) $settings['basemaps_offered'] as $offered_key ) {
+			if ( isset( $available[ $offered_key ] ) ) {
+				$offered[] = $offered_key;
+			}
+		}
+
+		if ( ! $offered ) {
+			$offered = array( 'dark' );
+		}
+
+		$key = in_array( $settings['basemap'], $offered, true ) ? $settings['basemap'] : $offered[0];
+
+		// Jeder angebotene Stil wird als eigene Ebene geladen; umgeschaltet wird
+		// über die Sichtbarkeit, damit die Route dabei stehen bleibt.
+		$basemaps = array();
+
+		foreach ( $offered as $offered_key ) {
+			$basemap = $available[ $offered_key ];
+
+			$basemaps[] = array(
+				'key'         => $offered_key,
+				'label'       => $basemap['label'],
+				'tiles'       => $basemap['tiles'],
+				'tileSize'    => $basemap['tileSize'],
+				'maxzoom'     => $basemap['maxzoom'],
+				'attribution' => $basemap['attribution'],
+				'dark'        => in_array( $offered_key, array( 'dark', 'satellite' ), true ),
+				// Luftbilder und topografische Karten sind unruhig; die Route
+				// braucht dort mehr Kontrast, um überhaupt aufzufallen.
+				'busy'        => in_array( $offered_key, array( 'satellite', 'topo' ), true ),
+				'swatch'      => $basemap['swatch'],
+			);
+		}
+
+		$active = $available[ $key ];
 
 		return array(
 			'basemap'     => $key,
-			'tiles'       => $basemap['tiles'],
-			'tileSize'    => $basemap['tileSize'],
-			'maxzoom'     => $basemap['maxzoom'],
-			'attribution' => $basemap['attribution'],
+			'basemaps'    => $basemaps,
+			'tiles'       => $active['tiles'],
+			'tileSize'    => $active['tileSize'],
+			'maxzoom'     => $active['maxzoom'],
+			'attribution' => $active['attribution'],
 			'styleUrl'    => $settings['style_url'],
 			'maptilerKey' => $settings['maptiler_key'],
 			'terrain'     => (bool) $settings['terrain'] && $settings['maptiler_key'],
@@ -216,7 +272,26 @@ class NB_Settings {
 		$clean['trip_subtitle'] = isset( $input['trip_subtitle'] ) ? sanitize_text_field( $input['trip_subtitle'] ) : '';
 		$clean['start_date']    = isset( $input['start_date'] ) && preg_match( '/^\d{4}-\d{2}-\d{2}$/', $input['start_date'] ) ? $input['start_date'] : '';
 		$clean['days_planned']  = isset( $input['days_planned'] ) ? max( 1, absint( $input['days_planned'] ) ) : $defaults['days_planned'];
-		$clean['basemap']       = isset( $input['basemap'] ) && array_key_exists( $input['basemap'], self::basemaps() ) ? $input['basemap'] : 'dark';
+		$available = self::basemaps();
+		$offered   = array();
+
+		foreach ( (array) ( isset( $input['basemaps_offered'] ) ? $input['basemaps_offered'] : array() ) as $key ) {
+			if ( array_key_exists( $key, $available ) && ! in_array( $key, $offered, true ) ) {
+				$offered[] = $key;
+			}
+		}
+
+		// Ohne Auswahl bliebe die Karte leer.
+		if ( ! $offered ) {
+			$offered = array( 'dark' );
+		}
+
+		$clean['basemaps_offered'] = $offered;
+
+		$default = isset( $input['basemap'] ) && array_key_exists( $input['basemap'], $available ) ? $input['basemap'] : 'dark';
+
+		// Der Standard muss zu den angebotenen Stilen gehören.
+		$clean['basemap'] = in_array( $default, $offered, true ) ? $default : $offered[0];
 		$clean['style_url']     = isset( $input['style_url'] ) ? esc_url_raw( trim( $input['style_url'] ) ) : '';
 		$clean['maptiler_key']  = isset( $input['maptiler_key'] ) ? sanitize_text_field( $input['maptiler_key'] ) : '';
 		$clean['terrain']       = empty( $input['terrain'] ) ? 0 : 1;
@@ -326,17 +401,50 @@ class NB_Settings {
 				<h2 class="title"><?php esc_html_e( 'Karte', 'norwegen-reise' ); ?></h2>
 				<table class="form-table" role="presentation">
 					<tr>
-						<th scope="row"><?php esc_html_e( 'Kartenstil', 'norwegen-reise' ); ?></th>
+						<th scope="row"><?php esc_html_e( 'Kartenstile', 'norwegen-reise' ); ?></th>
 						<td>
 							<fieldset>
-								<?php foreach ( self::basemaps() as $key => $basemap ) : ?>
-									<label style="display:block;margin-bottom:4px;">
-										<input type="radio" name="<?php echo esc_attr( self::OPTION ); ?>[basemap]" value="<?php echo esc_attr( $key ); ?>" <?php checked( $settings['basemap'], $key ); ?> />
-										<?php echo esc_html( $basemap['label'] ); ?>
-									</label>
-								<?php endforeach; ?>
+								<legend class="screen-reader-text"><?php esc_html_e( 'Angebotene Kartenstile und Standard', 'norwegen-reise' ); ?></legend>
+
+								<table class="nb-basemap-table">
+									<thead>
+										<tr>
+											<th scope="col"><?php esc_html_e( 'Anbieten', 'norwegen-reise' ); ?></th>
+											<th scope="col"><?php esc_html_e( 'Standard', 'norwegen-reise' ); ?></th>
+											<th scope="col"><?php esc_html_e( 'Stil', 'norwegen-reise' ); ?></th>
+										</tr>
+									</thead>
+									<tbody>
+										<?php foreach ( self::basemaps() as $key => $basemap ) : ?>
+											<tr>
+												<td>
+													<input type="checkbox" id="nb_offer_<?php echo esc_attr( $key ); ?>"
+														name="<?php echo esc_attr( self::OPTION ); ?>[basemaps_offered][]"
+														value="<?php echo esc_attr( $key ); ?>"
+														<?php checked( in_array( $key, (array) $settings['basemaps_offered'], true ) ); ?> />
+												</td>
+												<td>
+													<input type="radio" name="<?php echo esc_attr( self::OPTION ); ?>[basemap]"
+														value="<?php echo esc_attr( $key ); ?>" <?php checked( $settings['basemap'], $key ); ?> />
+												</td>
+												<td>
+													<label for="nb_offer_<?php echo esc_attr( $key ); ?>">
+														<span class="nb-basemap-swatch" style="background: <?php echo esc_attr( $basemap['swatch'] ); ?>"></span>
+														<?php echo esc_html( $basemap['label'] ); ?>
+													</label>
+												</td>
+											</tr>
+										<?php endforeach; ?>
+									</tbody>
+								</table>
 							</fieldset>
-							<p class="description"><?php esc_html_e( 'Alle Stile funktionieren ohne Schlüssel. Die Kacheln werden vom jeweiligen Anbieter geladen – bitte im Datenschutzhinweis erwähnen.', 'norwegen-reise' ); ?></p>
+
+							<p class="description">
+								<?php esc_html_e( 'Angehakte Stile können Besucher über einen Schalter in der Karte umschalten. Ist nur einer angehakt, erscheint kein Schalter. Der Standard bestimmt, womit die Karte startet.', 'norwegen-reise' ); ?>
+							</p>
+							<p class="description">
+								<?php esc_html_e( 'Alle Stile funktionieren ohne Schlüssel. Die Kacheln werden vom jeweiligen Anbieter geladen – bitte im Datenschutzhinweis erwähnen.', 'norwegen-reise' ); ?>
+							</p>
 						</td>
 					</tr>
 					<tr>

@@ -43,6 +43,8 @@
 	map.addControl( new window.maplibregl.NavigationControl( { visualizePitch: false } ), 'top-right' );
 	map.addControl( new window.maplibregl.FullscreenControl(), 'top-right' );
 
+	window.NBMapStyle.addBasemapControl( map, data.style, data.i18n || {}, 'top-right' );
+
 	map.on( 'load', function () {
 		if ( track.length > 1 ) {
 			map.addSource( 'nb-day', {

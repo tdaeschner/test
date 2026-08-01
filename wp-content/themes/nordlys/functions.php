@@ -7,7 +7,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'NORDLYS_VERSION', '1.0.0' );
+define( 'NORDLYS_VERSION', '1.1.0' );
 
 require_once get_template_directory() . '/inc/template-tags.php';
 
@@ -66,6 +66,7 @@ function nordlys_assets() {
 	}
 
 	wp_enqueue_style( 'maplibre-gl' );
+	wp_enqueue_style( 'nb-map' );
 	wp_enqueue_script( 'maplibre-gl' );
 	wp_enqueue_script( 'nb-map-style' );
 
@@ -113,6 +114,7 @@ function nordlys_trip_data() {
 		'start'     => __( 'Start', 'nordlys' ),
 		'here'      => __( 'Bis hierher', 'nordlys' ),
 		'reset'     => __( 'Gesamte Reise zeigen', 'nordlys' ),
+		'basemap'   => __( 'Kartenstil', 'nordlys' ),
 	);
 
 	$data['reduceMotion'] = false;
@@ -145,6 +147,7 @@ function nordlys_day_map_data( $post_id ) {
 		'track'   => $track,
 		'pins'    => $pins,
 		'planned' => array(),
+		'i18n'    => nb_map_labels(),
 	);
 }
 
